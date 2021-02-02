@@ -23,6 +23,13 @@ public class BigBoid : MonoBehaviour
     public Vector3 arriveTarget;
     public float slowingDistance = 10;
 
+    public GameObject Path;
+    private  List<Vector3> waypoints;
+    private bool isLooped;
+
+    private int waypointIndex = 0;
+
+    public bool followPath = true;
 
     public void OnDrawGizmos()
     {
@@ -46,7 +53,13 @@ public class BigBoid : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
+        waypoints = Path.GetComponent<Path>().waypoints;
+        isLooped = Path.GetComponent<Path>().isLooped;
+
+        if (followPath) {
+            waypointIndex = 0;
+            FollowPath();
+        }
     }
 
     public Vector3 Seek(Vector3 target)
@@ -76,6 +89,7 @@ public class BigBoid : MonoBehaviour
             if (seekTargetTransform != null)
             {
                 seekTarget = seekTargetTransform.position;
+
             }
             f += Seek(seekTarget);
         }
@@ -92,9 +106,32 @@ public class BigBoid : MonoBehaviour
         return f;
     }
 
+    public void FollowPath() {
+        float dist = Vector3.Distance(transform.position, seekTarget);
+        if (dist < 1.0f) {
+            if (waypointIndex < waypoints.Count - 1) {
+                waypointIndex += 1;
+                seekTarget = waypoints[waypointIndex];
+                arriveTarget = waypoints[waypointIndex];
+
+            } else {
+                if (isLooped) {
+                    waypointIndex = (waypointIndex + 1) % waypoints.Count;
+                    seekTarget = waypoints[waypointIndex];
+                    arriveTarget = waypoints[waypointIndex];
+                }
+            }
+        }
+    }
+
+    public void Flee() {
+        
+    }
+
     // Update is called once per frame
     void Update()
     {
+        FollowPath();
         force = CalculateForce();
         acceleration = force / mass;
         velocity = velocity + acceleration * Time.deltaTime;
