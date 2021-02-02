@@ -26,10 +26,11 @@ public class BigBoid : MonoBehaviour
     public GameObject Path;
     private  List<Vector3> waypoints;
     private bool isLooped;
-
     private int waypointIndex = 0;
-
     public bool followPath = true;
+
+    public bool fleeEnabled = true;
+    public GameObject fleeFrom;
 
     public void OnDrawGizmos()
     {
@@ -83,6 +84,7 @@ public class BigBoid : MonoBehaviour
 
     public Vector3 CalculateForce()
     {
+
         Vector3 f = Vector3.zero;
         if (seekEnabled)
         {
@@ -103,35 +105,50 @@ public class BigBoid : MonoBehaviour
             f += Arrive(arriveTarget);
         }
 
+        if (fleeEnabled) {
+            float fleeDist = 10.0f;
+            float dist = Vector3.Distance(transform.position, fleeFrom.transform.position);
+
+            if (dist < fleeDist) {
+                f += Flee(fleeFrom.transform.position);
+            }
+        }
+
         return f;
     }
 
     public void FollowPath() {
-        float dist = Vector3.Distance(transform.position, seekTarget);
-        if (dist < 1.0f) {
-            if (waypointIndex < waypoints.Count - 1) {
-                waypointIndex += 1;
-                seekTarget = waypoints[waypointIndex];
-                arriveTarget = waypoints[waypointIndex];
-
-            } else {
-                if (isLooped) {
-                    waypointIndex = (waypointIndex + 1) % waypoints.Count;
+        if (followPath) {
+            float dist = Vector3.Distance(transform.position, seekTarget);
+            if (dist < 1.0f) {
+                if (waypointIndex < waypoints.Count - 1) {
+                    waypointIndex += 1;
                     seekTarget = waypoints[waypointIndex];
                     arriveTarget = waypoints[waypointIndex];
+
+                } else {
+                    if (isLooped) {
+                        waypointIndex = (waypointIndex + 1) % waypoints.Count;
+                        seekTarget = waypoints[waypointIndex];
+                        arriveTarget = waypoints[waypointIndex];
+                    }
                 }
             }
         }
     }
 
-    public void Flee() {
-        
+    public Vector3 Flee(Vector3 target) {
+        Vector3 awayFromTarget = transform.position - target;
+        Vector3 desired = awayFromTarget.normalized * maxSpeed * 2;
+
+        return (desired - velocity);
     }
 
     // Update is called once per frame
     void Update()
     {
         FollowPath();
+        
         force = CalculateForce();
         acceleration = force / mass;
         velocity = velocity + acceleration * Time.deltaTime;
